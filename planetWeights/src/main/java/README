@@ -1,0 +1,78 @@
+# Weight Converter App
+
+## Overview
+The **Weight Converter App** is a simple Java console application that allows users to calculate their weight on different celestial bodies. The application prompts users to enter their weight on Earth and then converts it to the equivalent weight on the chosen planet or moon based on its gravity.
+
+## Features
+- Choose from a list of celestial bodies, including planets and the Moon.
+- Input your weight on Earth to get the equivalent weight on the selected celestial body.
+- Supports multiple conversions in a single session.
+- User-friendly prompts and error handling for invalid inputs.
+
+## Technologies Used
+- Java
+- Object-Oriented Programming (OOP)
+- Scanner for user input
+- Lists for managing celestial body data
+
+## How It Works
+1. The user is presented with a list of celestial bodies.
+2. The user selects a celestial body by entering the corresponding number.
+3. The user inputs their weight on Earth.
+4. The app calculates the equivalent weight on the selected celestial body using the formula:
+
+   \[ \text{Weight on Celestial Body} = (\text{Weight on Earth} / 9.81) * \text{Gravity of Celestial Body} \]
+
+5. The result is displayed to the user.
+6. The user can choose to perform another conversion or exit the application.
+
+## Example Usage
+```
+Choose a celestial body:
+1. Mercury
+2. Venus
+3. Earth
+4. Mars
+5. Jupiter
+6. Saturn
+7. Uranus
+8. Neptune
+9. Moon
+Enter the number of your choice: 4
+Enter your weight on Earth: 70
+Your weight on Mars would be: 26.43 kg
+Would you like to perform another conversion? (yes/no): no
+Thank you for using the Weight Converter!
+```
+
+## Classes
+### `WeightConverterApp`
+- Main application class that handles user interaction and conversion flow.
+
+### `WeightConverter`
+- Contains the conversion formula to calculate weight based on gravity.
+
+### `CelestialBody`
+- Represents a celestial body with a name and gravitational force.
+
+### `CelestialBodies`
+- Stores a list of celestial bodies and their respective gravity values.
+- Provides methods to retrieve celestial body data.
+
+## Future Enhancements
+- Add more celestial bodies such as Pluto and exoplanets.
+- Implement a GUI version using Java Swing or JavaFX.
+- Allow users to input custom gravitational values for hypothetical scenarios.
+
+## How to Run
+1. Compile the Java files using `javac`:
+   ```
+   javac WeightConverterApp.java CelestialBody.java CelestialBodies.java WeightConverter.java
+   ```
+2. Run the application:
+   ```
+   java WeightConverterApp
+   ```
+
+
+
