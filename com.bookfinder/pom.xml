@@ -11,8 +11,8 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
-    <groupId>com.webthreads</groupId>
-    <artifactId>copilot-exercise</artifactId>
+    <groupId>com.bookfinder</groupId>
+    <artifactId>bookfinder</artifactId>
     <version>1.0</version>
 
     <properties>
@@ -39,7 +39,6 @@
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
-
 
         <!-- Validation -->
         <dependency>
