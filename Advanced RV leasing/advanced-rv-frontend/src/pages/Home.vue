@@ -1,6 +1,9 @@
 <template>
   <div class="container">
-    <h1>Available RVs</h1>
+    <h1 class="title">
+  Available RVs
+  <span class="click-hint">Click images to learn more</span>
+</h1>
     <div class="rv-grid">
       <div
         v-for="rv in displayedRvs"
@@ -41,7 +44,7 @@ import safari from '@/assets/Woods-Safari-Preowned-Van-Advanced-RV.png'
 
 const rvs = [
   { name: 'Woods', image: arvWoods, comingSoon: true, url: 'https://advanced-rv.com/preowned-woods/' },
-  { name: 'Atlantis', image: atlantis, url: 'https://advanced-rv.com/preowned-atlantis/' },
+  { name: 'Atlantis', image: atlantis, url: 'https://advanced-rv.com/atlantis/' },
   { name: 'Bam Bam', image: bambam, url: 'https://advanced-rv.com/preowned-bam-bam/' },
   { name: 'Blue Skies', image: blueskies, url: 'https://advanced-rv.com/preowned-blue-skies/' },
   { name: 'Boxy Lady', image: boxylady, comingSoon: true, url: 'https://advanced-rv.com/preowned-boxy-lady/' },
@@ -50,7 +53,7 @@ const rvs = [
   { name: 'GDay', image: gday, url: 'https://advanced-rv.com/preowned-gday/' },
   // { name: 'Lucky2', image: lucky2 },
   // { name: 'Robert', image: robert },
-  { name: 'Rocky', image: rocky, url: 'https://advanced-rv.com/preowned-rocky/' },
+  { name: 'Rocky', image: rocky,comingSoon: true, url: 'https://advanced-rv.com/preowned-rocky/' },
   { name: 'Van Gogh', image: vangough, url: 'https://advanced-rv.com/preowned-van-gogh/' },
   // { name: 'Vanish', image: vanish },
   { name: 'Woods Safari', image: safari, url: 'https://advanced-rv.com/preowned-woods-safari/' },
@@ -78,10 +81,20 @@ function openPopup(url) {
   margin: 0 auto;
 }
 
-h1 {
+.title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
   font-size: 2rem;
-  margin-bottom: 1rem;
 }
+
+.click-hint {
+  font-size: 0.9rem;
+  color: #666;         /* muted gray */
+  font-style: italic;
+  user-select: none;
+}
+
 
 .rv-grid {
   display: grid;
