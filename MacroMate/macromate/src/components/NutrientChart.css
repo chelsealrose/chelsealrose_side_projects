@@ -1,0 +1,22 @@
+.nutrient-chart-container {
+  margin: 2rem auto;
+  padding: 1rem;
+  max-width: 600px;
+  background-color: #edeced;
+  border-radius: 12px;
+  box-shadow: 0 0 12px rgba(47, 91, 76, 0.1);
+}
+
+.nutrient-chart-title {
+  text-align: center;
+  font-family: 'Wedges', sans-serif;
+  color: #2f5b4c;
+  margin-bottom: 1rem;
+}
+
+.no-nutrient-data {
+  text-align: center;
+  color: #775456;
+  font-family: 'Wedges', sans-serif;
+  font-size: 1.1rem;
+}

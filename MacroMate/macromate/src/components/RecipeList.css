@@ -1,0 +1,15 @@
+.recipe-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.no-recipes {
+  text-align: center;
+  padding: 2rem;
+  color: #775456;
+  font-size: 1.25rem;
+  font-family: 'Wedges', sans-serif;
+}

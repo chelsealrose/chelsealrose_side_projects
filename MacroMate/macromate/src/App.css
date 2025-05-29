@@ -1,0 +1,93 @@
+@import url("https://fonts.googleapis.com/css2?family=Gabarito:wght@600&display=swap"); /* Wedges alt */
+
+body {
+  margin: 0;
+  font-family: "Gabarito", sans-serif;
+  background-color: #f8f8f8;
+  color: #2f5b4c;
+}
+
+.App {
+  text-align: center;
+  padding: 2rem;
+}
+
+.brand {
+  font-size: 3rem;
+  color: #8dc63f;
+  margin-bottom: 1rem;
+}
+
+.search-section input {
+  padding: 0.5rem;
+  font-size: 1rem;
+  border: 2px solid #76a458;
+  border-radius: 8px;
+  margin-right: 0.5rem;
+}
+
+.search-section button {
+  padding: 0.5rem 1rem;
+  background-color: #ed7f27;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.search-section button:hover {
+  background-color: #f8a837;
+}
+
+select {
+  margin-top: 1rem;
+  padding: 0.5rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #99b83c;
+}
+
+.food-details {
+  margin-top: 2rem;
+  background-color: #e2dad5;
+  padding: 1.5rem;
+  border-radius: 12px;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+  color: #775456;
+}
+
+.food-details h2 {
+  color: #a5562b;
+}
+
+.food-details ul {
+  list-style: none;
+  padding: 0;
+}
+
+.food-details li {
+  padding: 0.5rem 0;
+  font-size: 1rem;
+  border-bottom: 1px solid #ceb9a7;
+}
+.App {
+  max-width: 600px;
+  margin: 1rem auto;
+  font-family: Arial, sans-serif;
+  padding: 0 1rem;
+}
+
+button {
+  cursor: pointer;
+}
+
+input,
+textarea,
+select {
+  font-size: 1rem;
+}
+
+
+

@@ -1,0 +1,12 @@
+.recipe-details {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.recharts-wrapper {
+  max-width: 100%;
+  overflow-x: auto;
+}

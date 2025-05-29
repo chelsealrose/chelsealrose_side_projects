@@ -132,33 +132,27 @@ p {
 }
 
 /* Button */
-button {
-  display: inline-block;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
-  border: none;
-  border-radius: 30px;
-  color: white;
-  padding: 0.75rem 2rem;
-  font-size: 1.1rem;
-  font-weight: 600;
-  box-shadow:
-    0 6px 12px rgba(59, 130, 246, 0.4);
-  cursor: pointer;
-  transition:
-    background 0.3s ease,
-    box-shadow 0.3s ease,
-    transform 0.2s ease;
-  user-select: none;
+.btn-reset {
+  background-color: #286565 !important;
+  color: white !important;
+  border: none !important;
+  padding: 0.35rem 1rem !important;
+  border-radius: 20px !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+  cursor: pointer !important;
+  height: 32px !important;
+  box-shadow: none !important;
+  transition: background-color 0.3s ease !important; /* only background-color transitions */
+  align-self: center !important;
 }
 
-button:hover,
-button:focus {
-  background: linear-gradient(135deg, #2563eb, #1e40af);
-  box-shadow:
-    0 8px 16px rgba(37, 99, 235, 0.6);
-  transform: translateY(-2px);
-  outline: none;
+.btn-reset:hover {
+  background-color: #1f4b4b !important;
+  /* no changes to font size or weight here */
 }
+
+
 
 /* Form inputs */
 input, textarea {

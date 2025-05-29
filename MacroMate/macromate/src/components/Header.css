@@ -1,0 +1,9 @@
+.header {
+  background-color: #2f5b4c;
+  color: white;
+  padding: 1rem;
+  text-align: center;
+  font-family: 'Wedges', sans-serif; /* Or fallback */
+  font-size: 1.8rem;
+  user-select: none;
+}
