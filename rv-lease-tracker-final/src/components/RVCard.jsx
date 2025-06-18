@@ -1,10 +1,9 @@
 import { Link } from 'react-router-dom';
 import React from 'react';
 
-
 export default function RVCard({ rv }) {
   return (
-    <Link to={`/rv/${rv.id}`}>
+    <Link to={`/rv?name=${encodeURIComponent(rv.name)}`}>
       <div
         className="border-4 rounded-lg p-4 cursor-pointer hover:shadow-lg transition"
         style={{ borderColor: rv.color }}

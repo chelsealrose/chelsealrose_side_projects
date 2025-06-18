@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import React, { useState, useEffect } from 'react';
-import { parseISO, isWithinInterval, startOfMonth, endOfMonth } from 'date-fns';
+import { parseISO, startOfMonth, endOfMonth } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { rvs as initialRvs } from '../data/rvs';
 
 const LOCAL_STORAGE_KEY = 'rv_list';
@@ -18,9 +19,9 @@ const loadRvs = () => {
 };
 
 export default function CalendarView() {
+  const navigate = useNavigate();
   const today = new Date();
   const [displayYear, setDisplayYear] = useState(today.getFullYear());
-
   const [rvs, setRvs] = useState(loadRvs);
   const [editingId, setEditingId] = useState(null);
   const [newRv, setNewRv] = useState({ name: '', color: '#888888' });
@@ -31,17 +32,18 @@ export default function CalendarView() {
 
   const handleAddRv = () => {
     if (!newRv.name.trim()) return;
-
+    if (rvs.some(rv => rv.name.toLowerCase() === newRv.name.toLowerCase())) {
+      alert('RV name must be unique');
+      return;
+    }
     const newId = Math.max(0, ...rvs.map(r => r.id)) + 1;
     const rvToAdd = {
       id: newId,
-      name: newRv.name,
+      name: newRv.name.trim(),
       color: newRv.color,
-      status: 'Available',
       leasePeriods: [],
       maintenance: [],
     };
-
     setRvs(prev => [...prev, rvToAdd]);
     setNewRv({ name: '', color: '#888888' });
   };
@@ -61,25 +63,54 @@ export default function CalendarView() {
     );
   };
 
-  const isLeasedInMonth = (leasePeriods, monthIndex) => {
-    if (!leasePeriods || leasePeriods.length === 0) return false;
-    const monthStart = startOfMonth(new Date(displayYear, monthIndex, 1));
+  const updateRV = (name, updatedFields) => {
+    setRvs(prev =>
+      prev.map(rv =>
+        rv.name === name ? { ...rv, ...updatedFields } : rv
+      )
+    );
+  };
+
+  const getColorForLease = (leaseIndex) => {
+    const colors = ['bg-blue-600', 'bg-green-500', 'bg-purple-500', 'bg-yellow-500', 'bg-red-500'];
+    return colors[leaseIndex % colors.length];
+  };
+
+  const getLeaseColorForMonth = (leasePeriods, monthIndex) => {
+    if (!leasePeriods || leasePeriods.length === 0) return null;
+
+    const monthStart = startOfMonth(new Date(displayYear, monthIndex));
     const monthEnd = endOfMonth(monthStart);
-    return leasePeriods.some(({ start, end }) => {
+
+    for (let i = 0; i < leasePeriods.length; i++) {
+      const { start, end } = leasePeriods[i];
+      if (!start || !end) continue;
+
       const leaseStart = parseISO(start);
       const leaseEnd = parseISO(end);
-      return leaseStart <= monthEnd && leaseEnd >= monthStart;
-    });
+
+      // Check if lease period overlaps the month
+      if (leaseStart <= monthEnd && leaseEnd >= monthStart) {
+        return getColorForLease(i);
+      }
+    }
+    return null;
   };
 
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">RV Lease Calendar</h1>
 
-      {/* 🔵 Legend */}
+      {/* Legend */}
       <div className="mb-4 text-sm text-gray-600 flex gap-6">
         <div className="flex items-center gap-1">
-          <div className="w-4 h-4 bg-blue-600 rounded-sm"></div> Leased
+          <div className="w-4 h-4 bg-blue-600 rounded-sm"></div> Lease 1
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 bg-green-500 rounded-sm"></div> Lease 2
+        </div>
+        <div className="flex items-center gap-1">
+          <div className="w-4 h-4 bg-purple-500 rounded-sm"></div> Lease 3
         </div>
         <div className="flex items-center gap-1">
           <div className="w-4 h-4 bg-gray-200 border border-gray-300 rounded-sm"></div> Available
@@ -89,7 +120,7 @@ export default function CalendarView() {
         </div>
       </div>
 
-      {/* 📅 Year Selector */}
+      {/* Year Selector */}
       <div className="mb-4 flex items-center gap-4">
         <button onClick={() => setDisplayYear(y => y - 1)} className="px-2 py-1 border rounded">
           ← {displayYear - 1}
@@ -100,7 +131,7 @@ export default function CalendarView() {
         </button>
       </div>
 
-      {/* ➕ Add New RV Form */}
+      {/* Add RV */}
       <div className="mb-6 p-4 border rounded bg-gray-100">
         <h2 className="text-lg font-semibold mb-2">Add New RV</h2>
         <div className="flex flex-wrap gap-4 items-center">
@@ -126,84 +157,97 @@ export default function CalendarView() {
         </div>
       </div>
 
-      {/* 📊 Calendar Grid */}
+      {/* RV Cards */}
       <div className="grid gap-6 grid-cols-1 md:grid-cols-3">
-        {rvs.map(rv => (
-          <div
-            key={rv.id}
-            className="group border-4 rounded p-4 shadow hover:shadow-lg"
-            style={{ borderColor: rv.color }}
-          >
-            {editingId === rv.id ? (
-              <div className="mb-2 flex items-center gap-2">
-                <input
-                  type="text"
-                  value={rv.name}
-                  onChange={(e) => handleEditChange(rv.id, 'name', e.target.value)}
-                  className="border p-1 rounded w-full"
-                />
-                <input
-                  type="color"
-                  value={rv.color}
-                  onChange={(e) => handleEditChange(rv.id, 'color', e.target.value)}
-                  className="w-10 h-10 border"
-                />
-                <button
-                  onClick={() => setEditingId(null)}
-                  className="text-green-700 font-bold hover:underline"
-                >
-                  ✅
-                </button>
-              </div>
-            ) : (
-              <div className="flex justify-between items-start">
-                <Link to={`/rv/${rv.id}`}>
-                  <h2 className="text-lg font-semibold mb-1">{rv.name}</h2>
-                  <p className="mb-1">{rv.status}</p>
-                </Link>
-                <div className="flex gap-2">
+        {rvs.map(rv => {
+          const leaseColorThisMonth = getLeaseColorForMonth(rv.leasePeriods, today.getMonth());
+          const isCurrentMonth = displayYear === today.getFullYear();
+
+          return (
+            <div
+              key={rv.id}
+              className="group border-4 rounded p-4 shadow hover:shadow-lg"
+              style={{ borderColor: rv.color }}
+            >
+              {editingId === rv.id ? (
+                <div className="mb-2 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={rv.name}
+                    onChange={(e) => handleEditChange(rv.id, 'name', e.target.value)}
+                    className="border p-1 rounded w-full"
+                  />
+                  <input
+                    type="color"
+                    value={rv.color}
+                    onChange={(e) => handleEditChange(rv.id, 'color', e.target.value)}
+                    className="w-10 h-10 border"
+                  />
                   <button
-                    onClick={() => setEditingId(rv.id)}
-                    className="text-blue-600 hover:underline"
+                    onClick={() => setEditingId(null)}
+                    className="text-green-700 font-bold hover:underline"
                   >
-                    ✏️
-                  </button>
-                  <button
-                    onClick={() => handleDelete(rv.id)}
-                    className="text-red-600 hover:underline"
-                  >
-                    🗑️
+                    ✅
                   </button>
                 </div>
-              </div>
-            )}
-
-            <div className="flex space-x-1 mt-2">
-              {MONTHS.map(({ label, monthIndex }) => {
-                const leased = isLeasedInMonth(rv.leasePeriods, monthIndex);
-                const isCurrentMonth = monthIndex === today.getMonth() && displayYear === today.getFullYear();
-
-                return (
-                  <div
-                    key={monthIndex}
-                    className={`w-6 h-6 rounded-sm border text-center ${
-                      leased ? 'bg-blue-600 border-blue-600' : 'bg-gray-200 border-gray-300'
-                    } ${isCurrentMonth ? 'ring-2 ring-black' : ''}`}
-                    title={`${label} - ${leased ? 'Leased' : 'Available'}`}
-                  >
-                    <span className="text-white text-xs font-bold flex justify-center items-center h-full">
-                      {label}
-                    </span>
+              ) : (
+                <div className="flex justify-between items-start">
+                  <Link to={`/rv?name=${encodeURIComponent(rv.name)}`}>
+                    <h2 className="text-lg font-semibold mb-1">{rv.name}</h2>
+                    <p className="mb-1">
+                      {leaseColorThisMonth && isCurrentMonth ? 'Leased' : 'Available'}
+                    </p>
+                  </Link>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setEditingId(rv.id)}
+                      className="text-blue-600 hover:underline"
+                    >
+                      ✏️
+                    </button>
+                    <button
+                      onClick={() => handleDelete(rv.id)}
+                      className="text-red-600 hover:underline"
+                    >
+                      🗑️
+                    </button>
                   </div>
-                );
-              })}
+                </div>
+              )}
+
+              {/* Lease Bar */}
+              <div className="flex space-x-1 mt-2">
+                {MONTHS.map(({ label, monthIndex }) => {
+                  const leaseColor = getLeaseColorForMonth(rv.leasePeriods, monthIndex);
+                  const isCurrent = monthIndex === today.getMonth() && displayYear === today.getFullYear();
+
+                  return (
+                    <div
+                      key={monthIndex}
+                      className={`w-6 h-6 rounded-sm border text-center cursor-default ${
+                        leaseColor
+                          ? leaseColor + ' border-transparent text-white'
+                          : 'bg-gray-200 border-gray-300 text-black'
+                      } ${isCurrent ? 'ring-2 ring-black' : ''}`}
+                      title={`${label} - ${leaseColor ? 'Leased' : 'Available'}`}
+                    >
+                      <span className="text-xs font-bold flex justify-center items-center h-full">
+                        {label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
 }
+
+
+
 
 
 
