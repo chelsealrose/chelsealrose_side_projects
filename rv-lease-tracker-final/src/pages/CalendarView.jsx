@@ -4,6 +4,8 @@ import { parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { rvs as initialRvs } from '../data/rvs';
 
+
+
 const LOCAL_STORAGE_KEY = 'rv_list';
 
 const MONTHS = [
@@ -130,6 +132,12 @@ export default function CalendarView() {
           {displayYear + 1} →
         </button>
       </div>
+<button
+  onClick={() => navigate("/client/")}
+  className="mb-4 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700"
+>
+  🔍 View Clients
+</button>
 
       {/* Add RV */}
       <div className="mb-6 p-4 border rounded bg-gray-100">

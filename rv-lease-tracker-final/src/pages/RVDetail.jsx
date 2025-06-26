@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import ClientManager from '../components/ClientManager';
+import { getClients, saveClients } from "../data/clients";
+
 
 const LOCAL_STORAGE_KEY = 'rv_list';
 
@@ -19,20 +22,20 @@ export default function RVDetail() {
   const [newLease, setNewLease] = useState({ client: '', start: '', end: '' });
   const [newMaint, setNewMaint] = useState({ date: '', details: '', nextDue: '' });
 
-  // For editing existing lease/maint - store index and data
   const [editingLeaseIndex, setEditingLeaseIndex] = useState(null);
   const [editingLeaseData, setEditingLeaseData] = useState(null);
 
   const [editingMaintIndex, setEditingMaintIndex] = useState(null);
   const [editingMaintData, setEditingMaintData] = useState(null);
 
-  // Load RV by name param on mount or when rvs change
+  const [showPastLeases, setShowPastLeases] = useState(false);
+  const [showPastMaintenance, setShowPastMaintenance] = useState(false);
+
   useEffect(() => {
     if (!rvNameParam) return;
     const found = rvs.find(item => item.name === rvNameParam);
     if (found) setRv(found);
     else {
-      // If not found (deleted?), create a blank RV with that name
       setRv({
         id: Date.now(),
         name: rvNameParam,
@@ -43,7 +46,6 @@ export default function RVDetail() {
     }
   }, [rvNameParam, rvs]);
 
-  // Save updated RV back to rvs and persist
   const saveRv = (updatedRv) => {
     setRv(updatedRv);
     setRvs(prev => {
@@ -59,7 +61,6 @@ export default function RVDetail() {
     });
   };
 
-  // Lease handlers
   const handleLeaseChange = (e) => {
     const { name, value } = e.target;
     if (editingLeaseIndex !== null) {
@@ -70,20 +71,41 @@ export default function RVDetail() {
   };
 
   const addOrUpdateLease = () => {
-    if (editingLeaseIndex !== null) {
-      // Update existing lease
-      const updatedLeases = [...(rv.leasePeriods || [])];
-      updatedLeases[editingLeaseIndex] = editingLeaseData;
-      saveRv({ ...rv, leasePeriods: updatedLeases });
-      setEditingLeaseIndex(null);
-      setEditingLeaseData(null);
-    } else {
-      // Add new lease
-      if (!newLease.client || !newLease.start || !newLease.end) return alert('Fill all lease fields');
-      saveRv({ ...rv, leasePeriods: [...(rv.leasePeriods || []), newLease] });
-      setNewLease({ client: '', start: '', end: '' });
-    }
-  };
+  if (!editingLeaseIndex !== null && (!newLease.client || !newLease.start || !newLease.end)) {
+    return alert('Fill all lease fields');
+  }
+
+  const leaseToSave = editingLeaseIndex !== null ? editingLeaseData : newLease;
+
+  // Save lease to RV
+  const updatedLeases = [...(rv.leasePeriods || [])];
+  if (editingLeaseIndex !== null) {
+    updatedLeases[editingLeaseIndex] = leaseToSave;
+  } else {
+    updatedLeases.push(leaseToSave);
+  }
+  const updatedRv = { ...rv, leasePeriods: updatedLeases };
+  saveRv(updatedRv);
+
+  // Reset state
+  setEditingLeaseIndex(null);
+  setEditingLeaseData(null);
+  setNewLease({ client: '', start: '', end: '' });
+
+  // ✅ Sync with client list
+  const clients = getClients();
+  const exists = clients.some(c => c.name === leaseToSave.client);
+  if (!exists && leaseToSave.client) {
+    const newClient = {
+      name: leaseToSave.client,
+      contact: '',
+      notes: '',
+      documents: [],
+    };
+    saveClients([...clients, newClient]);
+  }
+};
+
 
   const editLease = (index) => {
     setEditingLeaseIndex(index);
@@ -97,7 +119,6 @@ export default function RVDetail() {
     saveRv({ ...rv, leasePeriods: updatedLeases });
   };
 
-  // Maintenance handlers
   const handleMaintChange = (e) => {
     const { name, value } = e.target;
     if (editingMaintIndex !== null) {
@@ -135,7 +156,26 @@ export default function RVDetail() {
 
   if (!rv) return <div className="p-4">Loading...</div>;
 
-  // Find next due maintenance date
+  const currentDate = new Date();
+
+  const currentLeases = (rv.leasePeriods || []).filter(
+    lease => new Date(lease.end) >= currentDate
+  );
+  const pastLeases = (rv.leasePeriods || []).filter(
+    lease => new Date(lease.end) < currentDate
+  );
+  {rv.leasePeriods?.length > 0 && (
+  <ClientManager selectedClientName={rv.leasePeriods[0]?.client} />
+)}
+
+
+  const currentMaint = (rv.maintenance || []).filter(
+    m => !m.nextDue || new Date(m.nextDue) >= currentDate
+  );
+  const pastMaint = (rv.maintenance || []).filter(
+    m => m.nextDue && new Date(m.nextDue) < currentDate
+  );
+
   const nextDue = rv.maintenance?.reduce((next, m) => {
     if (!m.nextDue) return next;
     const date = new Date(m.nextDue);
@@ -157,104 +197,113 @@ export default function RVDetail() {
       {/* Lease Section */}
       <section className="mb-6">
         <h2 className="text-xl font-semibold mb-2">Lease Information</h2>
-
-        {(rv.leasePeriods || []).length === 0 && (
-          <p className="italic text-gray-500 mb-4">No leases added</p>
+        {currentLeases.length === 0 && (
+          <p className="italic text-gray-500 mb-4">No current leases</p>
         )}
-
         <ul className="mb-4 space-y-2">
-          {(rv.leasePeriods || []).map((lease, i) => (
-            <li key={i} className="border p-3 rounded bg-gray-100 flex justify-between items-center">
-              {editingLeaseIndex === i ? (
-                <div className="flex gap-2 flex-wrap items-center w-full">
-                  <input
-                    type="text"
-                    name="client"
-                    value={editingLeaseData.client}
-                    onChange={handleLeaseChange}
-                    placeholder="Client Name"
-                    className="border p-1 rounded flex-grow min-w-[120px]"
-                  />
-                  <input
-                    type="date"
-                    name="start"
-                    value={editingLeaseData.start}
-                    onChange={handleLeaseChange}
-                    className="border p-1 rounded"
-                  />
-                  <input
-                    type="date"
-                    name="end"
-                    value={editingLeaseData.end}
-                    onChange={handleLeaseChange}
-                    className="border p-1 rounded"
-                  />
-                  <button onClick={addOrUpdateLease} className="bg-green-600 px-3 py-1 text-white rounded hover:bg-green-700">
-                    Save
-                  </button>
-                  <button
-                    onClick={() => { setEditingLeaseIndex(null); setEditingLeaseData(null); }}
-                    className="bg-gray-400 px-3 py-1 rounded hover:bg-gray-500"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <span><strong>{lease.client || 'Unknown'}</strong>: {lease.start} to {lease.end}</span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => editLease(i)}
-                      className="text-blue-600 hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => deleteLease(i)}
-                      className="text-red-600 hover:underline"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
+  {rv.leasePeriods
+    .map((lease, realIndex) => ({ lease, realIndex }))
+    .filter(({ lease }) => new Date(lease.end) >= new Date()) // only current and future
+    .map(({ lease, realIndex }) => (
+      <li key={realIndex} className="border p-3 rounded bg-gray-100 flex justify-between items-center">
+        {editingLeaseIndex === realIndex ? (
+          <div className="flex gap-2 flex-wrap items-center w-full">
+            <input
+              type="text"
+              name="client"
+              value={editingLeaseData.client}
+              onChange={handleLeaseChange}
+              placeholder="Client Name"
+              className="border p-1 rounded flex-grow min-w-[120px]"
+            />
+            <input
+              type="date"
+              name="start"
+              value={editingLeaseData.start}
+              onChange={handleLeaseChange}
+              className="border p-1 rounded"
+            />
+            <input
+              type="date"
+              name="end"
+              value={editingLeaseData.end}
+              onChange={handleLeaseChange}
+              className="border p-1 rounded"
+            />
+            <button
+              onClick={addOrUpdateLease}
+              className="bg-green-600 px-3 py-1 text-white rounded hover:bg-green-700"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => {
+                setEditingLeaseIndex(null);
+                setEditingLeaseData(null);
+              }}
+              className="bg-gray-400 px-3 py-1 rounded hover:bg-gray-500"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <>
+            <span>
+              <strong>{lease.client}</strong>: {lease.start} to {lease.end}
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => editLease(realIndex)}
+                className="text-blue-600 hover:underline"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => deleteLease(realIndex)}
+                className="text-red-600 hover:underline"
+              >
+                Delete
+              </button>
+            </div>
+          </>
+        )}
+      </li>
+    ))}
+</ul>
+
+
+        {pastLeases.length > 0 && (
+          <div className="mt-2">
+            <button onClick={() => setShowPastLeases(p => !p)} className="text-sm text-blue-600 hover:underline">
+              {showPastLeases ? 'Hide Past Leases' : 'Show Past Leases'}
+            </button>
+            {showPastLeases && (
+              <ul className="mt-2 space-y-2">
+                {pastLeases.map((lease, i) => (
+                  <li key={`past-${i}`} className="border p-3 rounded bg-gray-50 text-sm flex justify-between">
+<span>
+  <strong>
+    <a href={`/client/${encodeURIComponent(lease.client)}`} className="text-blue-600 underline hover:text-blue-800">
+      {lease.client}
+    </a>
+  </strong>: {lease.start} to {lease.end}
+</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         {/* Add New Lease */}
         {editingLeaseIndex === null && (
           <div className="border p-4 rounded bg-gray-50">
             <h3 className="font-semibold mb-2">Add New Lease</h3>
             <div className="flex flex-wrap gap-2 items-center">
-              <input
-                type="text"
-                name="client"
-                placeholder="Client Name"
-                value={newLease.client}
-                onChange={handleLeaseChange}
-                className="border p-2 rounded flex-grow min-w-[140px]"
-              />
-              <input
-                type="date"
-                name="start"
-                value={newLease.start}
-                onChange={handleLeaseChange}
-                className="border p-2 rounded"
-              />
-              <input
-                type="date"
-                name="end"
-                value={newLease.end}
-                onChange={handleLeaseChange}
-                className="border p-2 rounded"
-              />
-              <button
-                onClick={addOrUpdateLease}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Add Lease
-              </button>
+              <input type="text" name="client" placeholder="Client Name" value={newLease.client} onChange={handleLeaseChange} className="border p-2 rounded flex-grow min-w-[140px]" />
+              <input type="date" name="start" value={newLease.start} onChange={handleLeaseChange} className="border p-2 rounded" />
+              <input type="date" name="end" value={newLease.end} onChange={handleLeaseChange} className="border p-2 rounded" />
+              <button onClick={addOrUpdateLease} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Add Lease</button>
             </div>
           </div>
         )}
@@ -263,65 +312,26 @@ export default function RVDetail() {
       {/* Maintenance Section */}
       <section>
         <h2 className="text-xl font-semibold mb-2">Maintenance Records</h2>
-
-        {(rv.maintenance || []).length === 0 && (
-          <p className="italic text-gray-500 mb-4">No maintenance records added</p>
+        {currentMaint.length === 0 && (
+          <p className="italic text-gray-500 mb-4">No current maintenance records</p>
         )}
-
         <ul className="mb-4 space-y-2">
-          {(rv.maintenance || []).map((m, i) => (
+          {currentMaint.map((m, i) => (
             <li key={i} className="border p-3 rounded bg-gray-100 flex justify-between items-center">
               {editingMaintIndex === i ? (
                 <div className="flex gap-2 flex-wrap items-center w-full">
-                  <input
-                    type="date"
-                    name="date"
-                    value={editingMaintData.date}
-                    onChange={handleMaintChange}
-                    className="border p-1 rounded"
-                  />
-                  <input
-                    type="text"
-                    name="details"
-                    value={editingMaintData.details}
-                    onChange={handleMaintChange}
-                    placeholder="Details"
-                    className="border p-1 rounded flex-grow min-w-[150px]"
-                  />
-                  <input
-                    type="date"
-                    name="nextDue"
-                    value={editingMaintData.nextDue || ''}
-                    onChange={handleMaintChange}
-                    className="border p-1 rounded"
-                    title="Next due date (optional)"
-                  />
-                  <button onClick={addOrUpdateMaint} className="bg-green-600 px-3 py-1 text-white rounded hover:bg-green-700">
-                    Save
-                  </button>
-                  <button
-                    onClick={() => { setEditingMaintIndex(null); setEditingMaintData(null); }}
-                    className="bg-gray-400 px-3 py-1 rounded hover:bg-gray-500"
-                  >
-                    Cancel
-                  </button>
+                  <input type="date" name="date" value={editingMaintData.date} onChange={handleMaintChange} className="border p-1 rounded" />
+                  <input type="text" name="details" value={editingMaintData.details} onChange={handleMaintChange} placeholder="Details" className="border p-1 rounded flex-grow min-w-[150px]" />
+                  <input type="date" name="nextDue" value={editingMaintData.nextDue || ''} onChange={handleMaintChange} className="border p-1 rounded" />
+                  <button onClick={addOrUpdateMaint} className="bg-green-600 px-3 py-1 text-white rounded hover:bg-green-700">Save</button>
+                  <button onClick={() => { setEditingMaintIndex(null); setEditingMaintData(null); }} className="bg-gray-400 px-3 py-1 rounded hover:bg-gray-500">Cancel</button>
                 </div>
               ) : (
                 <>
                   <span>{m.date} — {m.details} {m.nextDue ? `(Next Due: ${m.nextDue})` : ''}</span>
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => editMaint(i)}
-                      className="text-blue-600 hover:underline"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => deleteMaint(i)}
-                      className="text-red-600 hover:underline"
-                    >
-                      Delete
-                    </button>
+                    <button onClick={() => editMaint(i)} className="text-blue-600 hover:underline">Edit</button>
+                    <button onClick={() => deleteMaint(i)} className="text-red-600 hover:underline">Delete</button>
                   </div>
                 </>
               )}
@@ -329,40 +339,31 @@ export default function RVDetail() {
           ))}
         </ul>
 
-        {/* Add New Maintenance */}
+        {pastMaint.length > 0 && (
+          <div className="mt-2">
+            <button onClick={() => setShowPastMaintenance(p => !p)} className="text-sm text-blue-600 hover:underline">
+              {showPastMaintenance ? 'Hide Past Maintenance' : 'Show Past Maintenance'}
+            </button>
+            {showPastMaintenance && (
+              <ul className="mt-2 space-y-2">
+                {pastMaint.map((m, i) => (
+                  <li key={`past-maint-${i}`} className="border p-3 rounded bg-gray-50 text-sm flex justify-between">
+                    <span>{m.date} — {m.details} {m.nextDue ? `(Next Due: ${m.nextDue})` : ''}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+
         {editingMaintIndex === null && (
           <div className="border p-4 rounded bg-gray-50">
             <h3 className="font-semibold mb-2">Add Maintenance Record</h3>
             <div className="flex flex-wrap gap-2 items-center">
-              <input
-                type="date"
-                name="date"
-                value={newMaint.date}
-                onChange={handleMaintChange}
-                className="border p-2 rounded"
-              />
-              <input
-                type="text"
-                name="details"
-                placeholder="Details"
-                value={newMaint.details}
-                onChange={handleMaintChange}
-                className="border p-2 rounded flex-grow min-w-[150px]"
-              />
-              <input
-                type="date"
-                name="nextDue"
-                value={newMaint.nextDue}
-                onChange={handleMaintChange}
-                className="border p-2 rounded"
-                title="Next due date (optional)"
-              />
-              <button
-                onClick={addOrUpdateMaint}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Add Maintenance
-              </button>
+              <input type="date" name="date" value={newMaint.date} onChange={handleMaintChange} className="border p-2 rounded" />
+              <input type="text" name="details" placeholder="Details" value={newMaint.details} onChange={handleMaintChange} className="border p-2 rounded flex-grow min-w-[150px]" />
+              <input type="date" name="nextDue" value={newMaint.nextDue} onChange={handleMaintChange} className="border p-2 rounded" />
+              <button onClick={addOrUpdateMaint} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Add Maintenance</button>
             </div>
           </div>
         )}
@@ -376,13 +377,3 @@ export default function RVDetail() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-
-
