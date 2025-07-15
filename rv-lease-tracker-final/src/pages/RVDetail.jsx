@@ -71,7 +71,7 @@ export default function RVDetail() {
   };
 
   const addOrUpdateLease = () => {
-  if (!editingLeaseIndex !== null && (!newLease.client || !newLease.start || !newLease.end)) {
+if (editingLeaseIndex === null && (!newLease.client || !newLease.start || !newLease.end)) {
     return alert('Fill all lease fields');
   }
 
@@ -153,6 +153,21 @@ export default function RVDetail() {
     updatedMaint.splice(index, 1);
     saveRv({ ...rv, maintenance: updatedMaint });
   };
+  const handleClientClick = (clientName) => {
+  const clients = getClients();
+  const exists = clients.some(c => c.name === clientName);
+  if (!exists) {
+    const newClient = {
+      name: clientName,
+      contact: '',
+      notes: '',
+      documents: []
+    };
+    saveClients([...clients, newClient]);
+  }
+  navigate(`/client/${encodeURIComponent(clientName)}`);
+};
+
 
   if (!rv) return <div className="p-4">Loading...</div>;
 
@@ -164,10 +179,6 @@ export default function RVDetail() {
   const pastLeases = (rv.leasePeriods || []).filter(
     lease => new Date(lease.end) < currentDate
   );
-  {rv.leasePeriods?.length > 0 && (
-  <ClientManager selectedClientName={rv.leasePeriods[0]?.client} />
-)}
-
 
   const currentMaint = (rv.maintenance || []).filter(
     m => !m.nextDue || new Date(m.nextDue) >= currentDate
